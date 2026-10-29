@@ -3,9 +3,11 @@ Eating Go adalah platform berbasis web untuk pencarian lokasi kafe dan reservasi
 
 
 ## Anggota Tim
-- Nur Diah Indah Claryza — Peran
-- Nama 2 — Peran
-- Nama 3 — Peran
+- Zaskiya Salwa Navitri - Ketua
+- Anastasya Salsabila Khoirunnisa - Anggota 1
+- Nur Diah Indah Claryza — Anggota 2
+- Syarifah Nazwa Aulia Hikmah - Anggota 3
+- Vera Friska - Anggota 4
 
 ## Teknologi
 - PHP
