@@ -159,128 +159,146 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tambah Kafe - Eating Go</title>
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
-<main>
-    <h1>Tambah Data Kafe</h1>
-    <p>Silakan isi informasi kafe yang ingin ditambahkan.</p>
+<?php require_once __DIR__ . '/includes/navbar.php'; ?>
 
-    <?php if ($errors !== []): ?>
-        <div role="alert">
-            <strong>Terjadi kesalahan:</strong>
-            <ul>
-                <?php foreach ($errors as $error): ?>
-                    <li><?= e($error) ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
+<main class="container">
+    <div class="form-card">
+        <h1 class="page-title" style="margin-bottom: 0.5rem;">Tambah Data Kafe</h1>
+        <p class="page-subtitle" style="margin-bottom: 1.5rem;">Silakan isi formulir di bawah ini untuk menambahkan kafe baru.</p>
 
-    <form action="create_cafe.php" method="POST">
+        <?php if ($errors !== []): ?>
+            <div class="alert alert-danger" role="alert">
+                <strong>Terjadi kesalahan:</strong>
+                <ul>
+                    <?php foreach ($errors as $error): ?>
+                        <li><?= e($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
 
-        <input
-            type="hidden"
-            name="csrf_token"
-            value="<?= e($_SESSION['csrf_token']) ?>"
-        >
+        <form action="create_cafe.php" method="POST">
 
-        <div>
-            <label for="name">Nama Kafe *</label>
             <input
-                type="text"
-                id="name"
-                name="name"
-                maxlength="150"
-                value="<?= e($old['name']) ?>"
-                required
+                type="hidden"
+                name="csrf_token"
+                value="<?= e($_SESSION['csrf_token']) ?>"
             >
-        </div>
 
-        <div>
-            <label for="description">Deskripsi Kafe</label>
-            <textarea
-                id="description"
-                name="description"
-                rows="4"
-            ><?= e($old['description']) ?></textarea>
-        </div>
+            <div class="form-group">
+                <label for="name">Nama Kafe *</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    maxlength="150"
+                    value="<?= e($old['name']) ?>"
+                    placeholder="Contoh: Kopi Titik Koma"
+                    required
+                >
+            </div>
 
-        <div>
-            <label for="address">Alamat Kafe *</label>
-            <textarea
-                id="address"
-                name="address"
-                maxlength="255"
-                rows="3"
-                required
-            ><?= e($old['address']) ?></textarea>
-        </div>
+            <div class="form-group">
+                <label for="description">Deskripsi Kafe</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="3"
+                    placeholder="Tulis deskripsi atau suasana kafe..."
+                ><?= e($old['description']) ?></textarea>
+            </div>
 
-        <div>
-            <label for="city">Kota *</label>
-            <input
-                type="text"
-                id="city"
-                name="city"
-                maxlength="100"
-                value="<?= e($old['city']) ?>"
-                required
-            >
-        </div>
+            <div class="form-group">
+                <label for="address">Alamat Kafe *</label>
+                <textarea
+                    id="address"
+                    name="address"
+                    maxlength="255"
+                    rows="2"
+                    placeholder="Contoh: Jl. Soekarno Hatta No. 15"
+                    required
+                ><?= e($old['address']) ?></textarea>
+            </div>
 
-        <div>
-            <label for="phone">Nomor Telepon</label>
-            <input
-                type="tel"
-                id="phone"
-                name="phone"
-                maxlength="20"
-                value="<?= e($old['phone']) ?>"
-            >
-        </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="city">Kota *</label>
+                    <input
+                        type="text"
+                        id="city"
+                        name="city"
+                        maxlength="100"
+                        value="<?= e($old['city']) ?>"
+                        placeholder="Contoh: Balikpapan"
+                        required
+                    >
+                </div>
 
-        <div>
-            <label for="opening_time">Jam Buka *</label>
-            <input
-                type="time"
-                id="opening_time"
-                name="opening_time"
-                value="<?= e($old['opening_time']) ?>"
-                required
-            >
-        </div>
+                <div class="form-group">
+                    <label for="phone">Nomor Telepon</label>
+                    <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        maxlength="20"
+                        value="<?= e($old['phone']) ?>"
+                        placeholder="08123456789"
+                    >
+                </div>
+            </div>
 
-        <div>
-            <label for="closing_time">Jam Tutup *</label>
-            <input
-                type="time"
-                id="closing_time"
-                name="closing_time"
-                value="<?= e($old['closing_time']) ?>"
-                required
-            >
-        </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="opening_time">Jam Buka *</label>
+                    <input
+                        type="time"
+                        id="opening_time"
+                        name="opening_time"
+                        value="<?= e($old['opening_time']) ?>"
+                        required
+                    >
+                </div>
 
-        <div>
-            <label for="image_url">URL Gambar Kafe</label>
-            <input
-                type="url"
-                id="image_url"
-                name="image_url"
-                maxlength="500"
-                value="<?= e($old['image_url']) ?>"
-                placeholder="https://contoh.com/gambar.jpg"
-            >
-        </div>
+                <div class="form-group">
+                    <label for="closing_time">Jam Tutup *</label>
+                    <input
+                        type="time"
+                        id="closing_time"
+                        name="closing_time"
+                        value="<?= e($old['closing_time']) ?>"
+                        required
+                    >
+                </div>
+            </div>
 
-        <p>* Wajib diisi.</p>
+            <div class="form-group">
+                <label for="image_url">URL Gambar Kafe</label>
+                <input
+                    type="url"
+                    id="image_url"
+                    name="image_url"
+                    maxlength="500"
+                    value="<?= e($old['image_url']) ?>"
+                    placeholder="https://contoh.com/gambar.jpg"
+                >
+            </div>
 
-        <button type="submit">Simpan Kafe</button>
-        <a href="cafes.php">Batal</a>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">* Wajib diisi.</p>
 
-    </form>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Simpan Kafe</button>
+                <a href="cafes.php" class="btn btn-secondary">Batal</a>
+            </div>
+
+        </form>
+    </div>
 </main>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
 
 </body>
 </html>

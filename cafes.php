@@ -62,67 +62,113 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Kafe - Eating Go</title>
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 
-<main>
+<?php require_once __DIR__ . '/includes/navbar.php'; ?>
 
-    <h1>Daftar Kafe</h1>
+<main class="container">
 
-    <a href="create_cafe.php">
-        + Tambah Kafe
-    </a>
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Daftar Kafe</h1>
+            <p class="page-subtitle">Jelajahi dan temukan tempat nongkrong terbaik di Eating Go</p>
+        </div>
+        <div>
+            <a href="create_cafe.php" class="btn btn-primary">
+                + Tambah Kafe
+            </a>
+        </div>
+    </div>
 
     <?php if (isset($_GET['created']) && $_GET['created'] === '1'): ?>
-        <p role="status">
-            Data kafe berhasil ditambahkan!
-        </p>
+        <div class="alert alert-success" role="status">
+            ✓ Data kafe berhasil ditambahkan!
+        </div>
     <?php endif; ?>
 
     <?php if (isset($_GET['updated']) && $_GET['updated'] === '1'): ?>
-        <p role="status">
-            Data kafe berhasil diperbarui!
-        </p>
+        <div class="alert alert-success" role="status">
+            ✓ Data kafe berhasil diperbarui!
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['deleted']) && $_GET['deleted'] === '1'): ?>
+        <div class="alert alert-success" role="status">
+            ✓ Data kafe berhasil dihapus!
+        </div>
     <?php endif; ?>
 
     <?php if ($cafes === []): ?>
 
-        <p>Belum ada kafe aktif yang tersedia.</p>
+        <div class="empty-state">
+            <p>Belum ada kafe aktif yang tersedia saat ini.</p>
+            <a href="create_cafe.php" class="btn btn-primary">+ Tambah Kafe Pertama</a>
+        </div>
 
     <?php else: ?>
 
-        <section aria-label="Daftar kafe">
+        <section class="cafe-grid" aria-label="Daftar kafe">
 
             <?php foreach ($cafes as $cafe): ?>
 
-                <article>
+                <article class="cafe-card">
 
-                    <?php if (!empty($cafe['image_url'])): ?>
-                        <img
-                            src="<?= e($cafe['image_url']) ?>"
-                            alt="Foto <?= e($cafe['name']) ?>"
-                        >
-                    <?php endif; ?>
+                    <div class="cafe-image-wrapper">
+                        <?php if (!empty($cafe['image_url'])): ?>
+                            <img
+                                src="<?= e($cafe['image_url']) ?>"
+                                alt="Foto <?= e($cafe['name']) ?>"
+                                class="cafe-image"
+                                loading="lazy"
+                            >
+                        <?php else: ?>
+                            <div class="cafe-image-placeholder">
+                                ☕
+                                <span>No Image</span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
 
-                    <h2><?= e($cafe['name']) ?></h2>
+                    <div class="cafe-body">
+                        <h2 class="cafe-title"><?= e($cafe['name']) ?></h2>
 
-                    <p><?= e($cafe['description']) ?></p>
+                        <p class="cafe-desc">
+                            <?= e($cafe['description'] ?: 'Tidak ada deskripsi kafe.') ?>
+                        </p>
 
-                    <p>
-                        <?= e($cafe['address']) ?>,
-                        <?= e($cafe['city']) ?>
-                    </p>
+                        <div class="cafe-info">
+                            <div class="cafe-info-item">
+                                <span class="icon">📍</span>
+                                <span><?= e($cafe['address']) ?>, <?= e($cafe['city']) ?></span>
+                            </div>
+                            <div class="cafe-info-item">
+                                <span class="icon">🕒</span>
+                                <span><?= e(formatTime($cafe['opening_time'])) ?> - <?= e(formatTime($cafe['closing_time'])) ?></span>
+                            </div>
+                            <?php if (!empty($cafe['phone'])): ?>
+                                <div class="cafe-info-item">
+                                    <span class="icon">📞</span>
+                                    <span><?= e($cafe['phone']) ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
 
-                    <p>
-                        Jam buka:
-                        <?= e(formatTime($cafe['opening_time'])) ?>
-                        -
-                        <?= e(formatTime($cafe['closing_time'])) ?>
-                    </p>
+                        <div class="cafe-actions">
+                            <a href="update_cafe.php?id=<?= e((string) $cafe['id']) ?>" class="btn btn-outline btn-sm">
+                                ✏️ Perbarui
+                            </a>
 
-                    <?php if (!empty($cafe['phone'])): ?>
-                        <p>Telepon: <?= e($cafe['phone']) ?></p>
-                    <?php endif; ?>
+                            <form action="delete_cafe.php" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kafe <?= e(addslashes($cafe['name'])) ?>?');">
+                                <input type="hidden" name="id" value="<?= e((string) $cafe['id']) ?>">
+                                <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    🗑️ Hapus
+                                </button>
+                            </form>
+                        </div>
+                    </div>
 
                 </article>
 
@@ -132,26 +178,9 @@ try {
 
     <?php endif; ?>
 
-    <section aria-label="Perbarui data kafe">
-        <h2>Perbarui Data Kafe</h2>
-
-        <?php if ($editableCafes === []): ?>
-            <p>Belum ada kafe yang dapat diperbarui.</p>
-        <?php else: ?>
-            <ul>
-                <?php foreach ($editableCafes as $editableCafe): ?>
-                    <li>
-                        <?= e($editableCafe['name']) ?>
-                        <a href="update_cafe.php?id=<?= e((string) $editableCafe['id']) ?>">
-                            Perbarui
-                        </a>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-    </section>
-
 </main>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>
 
 </body>
 </html>
