@@ -34,6 +34,26 @@ function formatTime(?string $time): string
 
     return date('H:i', strtotime($time));
 }
+
+session_start();
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+try {
+    $editableCafeStatement = $pdo->prepare(
+        'SELECT id, name
+         FROM cafes
+         WHERE status = :status
+         ORDER BY name ASC'
+    );
+    $editableCafeStatement->execute(['status' => 'aktif']);
+    $editableCafes = $editableCafeStatement->fetchAll();
+} catch (PDOException $exception) {
+    error_log('Editable cafe list query failed: ' . $exception->getMessage());
+    throw new RuntimeException('Data kafe untuk diperbarui tidak dapat dimuat.', 0, $exception);
+}
 ?>
 
 <!DOCTYPE html>
@@ -56,6 +76,12 @@ function formatTime(?string $time): string
     <?php if (isset($_GET['created']) && $_GET['created'] === '1'): ?>
         <p role="status">
             Data kafe berhasil ditambahkan!
+        </p>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['updated']) && $_GET['updated'] === '1'): ?>
+        <p role="status">
+            Data kafe berhasil diperbarui!
         </p>
     <?php endif; ?>
 
@@ -105,6 +131,25 @@ function formatTime(?string $time): string
         </section>
 
     <?php endif; ?>
+
+    <section aria-label="Perbarui data kafe">
+        <h2>Perbarui Data Kafe</h2>
+
+        <?php if ($editableCafes === []): ?>
+            <p>Belum ada kafe yang dapat diperbarui.</p>
+        <?php else: ?>
+            <ul>
+                <?php foreach ($editableCafes as $editableCafe): ?>
+                    <li>
+                        <?= e($editableCafe['name']) ?>
+                        <a href="update_cafe.php?id=<?= e((string) $editableCafe['id']) ?>">
+                            Perbarui
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    </section>
 
 </main>
 
