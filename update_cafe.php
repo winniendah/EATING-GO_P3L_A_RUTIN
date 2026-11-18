@@ -58,8 +58,8 @@ $old = [
     'phone' => (string) ($cafe['phone'] ?? ''),
     'opening_time' => substr((string) ($cafe['opening_time'] ?? ''), 0, 5),
     'closing_time' => substr((string) ($cafe['closing_time'] ?? ''), 0, 5),
-    'image_url' => (string) ($cafe['image_url'] ?? ''),
 ];
+$currentImageUrl = (string) ($cafe['image_url'] ?? '');
 
 if ($method === 'POST' && $cafe !== null) {
     foreach ($old as $field => $value) {
@@ -111,18 +111,63 @@ if ($method === 'POST' && $cafe !== null) {
         $errors[] = 'Nomor telepon maksimal 20 karakter.';
     }
 
-    if ($old['image_url'] !== '') {
+    $finalImagePath = $currentImageUrl !== '' ? $currentImageUrl : null;
+
+    // Cek jika pengguna memilih untuk menghapus foto saat ini
+    if (!empty($_POST['remove_image']) && $_POST['remove_image'] === '1') {
         if (
-            filter_var($old['image_url'], FILTER_VALIDATE_URL) === false ||
-            !in_array(
-                strtolower((string) parse_url($old['image_url'], PHP_URL_SCHEME)),
-                ['http', 'https'],
-                true
-            )
+            $currentImageUrl !== '' &&
+            str_starts_with($currentImageUrl, 'assets/uploads/cafes/') &&
+            file_exists(__DIR__ . '/' . $currentImageUrl)
         ) {
-            $errors[] = 'URL gambar harus menggunakan alamat HTTP atau HTTPS yang valid.';
-        } elseif (mb_strlen($old['image_url']) > 500) {
-            $errors[] = 'URL gambar maksimal 500 karakter.';
+            unlink(__DIR__ . '/' . $currentImageUrl);
+        }
+        $finalImagePath = null;
+    }
+
+    // Cek jika pengguna mengunggah foto baru
+    if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $file = $_FILES['image'];
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Gagal mengunggah foto kafe.';
+        } elseif ($file['size'] > 2 * 1024 * 1024) {
+            $errors[] = 'Ukuran foto maksimal 2MB.';
+        } else {
+            $allowedMimeTypes = [
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'image/webp' => 'webp',
+                'image/gif'  => 'gif',
+            ];
+
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($file['tmp_name']);
+
+            if (!isset($allowedMimeTypes[$mimeType])) {
+                $errors[] = 'Format foto tidak valid. Gunakan format JPG, PNG, WEBP, atau GIF.';
+            } else {
+                $extension = $allowedMimeTypes[$mimeType];
+                $fileName = 'cafe_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
+                $uploadDir = __DIR__ . '/assets/uploads/cafes/';
+
+                if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                    $errors[] = 'Gagal membuat folder penyimpanan foto.';
+                } elseif (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
+                    $errors[] = 'Gagal menyimpan foto ke server.';
+                } else {
+                    // Hapus foto lama jika tersimpan secara lokal di folder uploads
+                    if (
+                        $currentImageUrl !== '' &&
+                        str_starts_with($currentImageUrl, 'assets/uploads/cafes/') &&
+                        file_exists(__DIR__ . '/' . $currentImageUrl)
+                    ) {
+                        unlink(__DIR__ . '/' . $currentImageUrl);
+                    }
+
+                    $finalImagePath = 'assets/uploads/cafes/' . $fileName;
+                }
+            }
         }
     }
 
@@ -152,9 +197,7 @@ if ($method === 'POST' && $cafe !== null) {
                     : null,
                 'opening_time' => $old['opening_time'],
                 'closing_time' => $old['closing_time'],
-                'image_url' => $old['image_url'] !== ''
-                    ? $old['image_url']
-                    : null,
+                'image_url' => $finalImagePath,
                 'id' => $id,
             ]);
 
@@ -197,7 +240,7 @@ if ($method === 'POST' && $cafe !== null) {
         <?php endif; ?>
 
         <?php if ($cafe !== null): ?>
-            <form action="update_cafe.php" method="POST">
+            <form action="update_cafe.php" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="id" value="<?= e((string) $id) ?>">
                 <input
                     type="hidden"
@@ -245,15 +288,32 @@ if ($method === 'POST' && $cafe !== null) {
                 </div>
 
                 <div class="form-group">
-                    <label for="image_url">URL Gambar Kafe</label>
+                    <label for="image">Foto Kafe</label>
+                    <?php if (!empty($currentImageUrl)): ?>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem;">
+                            <img
+                                src="<?= e($currentImageUrl) ?>"
+                                alt="Foto saat ini"
+                                style="width: 90px; height: 90px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);"
+                            >
+                            <div>
+                                <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Foto saat ini</span>
+                                <label style="font-size: 0.85rem; color: var(--danger); cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+                                    <input type="checkbox" name="remove_image" value="1">
+                                    Hapus foto saat ini
+                                </label>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <input
-                        type="url"
-                        id="image_url"
-                        name="image_url"
-                        maxlength="500"
-                        value="<?= e($old['image_url']) ?>"
-                        placeholder="https://contoh.com/gambar.jpg"
+                        type="file"
+                        id="image"
+                        name="image"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
                     >
+                    <small style="display: block; margin-top: 0.35rem; color: var(--text-muted); font-size: 0.85rem;">
+                        Pilih file baru jika ingin mengganti foto (JPG, PNG, WEBP, GIF, Maksimal 2MB).
+                    </small>
                 </div>
 
                 <p style="font-size: 0.85rem; color: var(--text-muted);">* Wajib diisi.</p>
