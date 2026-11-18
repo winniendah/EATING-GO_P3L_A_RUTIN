@@ -27,7 +27,6 @@ $old = [
     'phone' => '',
     'opening_time' => '',
     'closing_time' => '',
-    'image_url' => '',
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -83,18 +82,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Nomor telepon maksimal 20 karakter.';
     }
 
-    if ($old['image_url'] !== '') {
-        if (
-            filter_var($old['image_url'], FILTER_VALIDATE_URL) === false ||
-            !in_array(
-                strtolower((string) parse_url($old['image_url'], PHP_URL_SCHEME)),
-                ['http', 'https'],
-                true
-            )
-        ) {
-            $errors[] = 'URL gambar harus menggunakan alamat HTTP atau HTTPS yang valid.';
-        } elseif (mb_strlen($old['image_url']) > 500) {
-            $errors[] = 'URL gambar maksimal 500 karakter.';
+    $uploadedImagePath = null;
+
+    // Validasi dan pemrosesan upload foto kafe (opsional)
+    if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $file = $_FILES['image'];
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Gagal mengunggah foto kafe.';
+        } elseif ($file['size'] > 2 * 1024 * 1024) {
+            $errors[] = 'Ukuran foto maksimal 2MB.';
+        } else {
+            $allowedMimeTypes = [
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'image/webp' => 'webp',
+                'image/gif'  => 'gif',
+            ];
+
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($file['tmp_name']);
+
+            if (!isset($allowedMimeTypes[$mimeType])) {
+                $errors[] = 'Format foto tidak valid. Gunakan format JPG, PNG, WEBP, atau GIF.';
+            } else {
+                $extension = $allowedMimeTypes[$mimeType];
+                $fileName = 'cafe_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
+                $uploadDir = __DIR__ . '/assets/uploads/cafes/';
+
+                if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                    $errors[] = 'Gagal membuat folder penyimpanan foto.';
+                } elseif (!move_uploaded_file($file['tmp_name'], $uploadDir . $fileName)) {
+                    $errors[] = 'Gagal menyimpan foto ke server.';
+                } else {
+                    $uploadedImagePath = 'assets/uploads/cafes/' . $fileName;
+                }
+            }
         }
     }
 
@@ -136,9 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     : null,
                 'opening_time' => $old['opening_time'],
                 'closing_time' => $old['closing_time'],
-                'image_url' => $old['image_url'] !== ''
-                    ? $old['image_url']
-                    : null,
+                'image_url' => $uploadedImagePath,
                 'status' => 'aktif',
             ]);
 
@@ -181,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form action="create_cafe.php" method="POST">
+        <form action="create_cafe.php" method="POST" enctype="multipart/form-data">
 
             <input
                 type="hidden"
@@ -276,15 +297,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-                <label for="image_url">URL Gambar Kafe</label>
+                <label for="image">Foto Kafe</label>
                 <input
-                    type="url"
-                    id="image_url"
-                    name="image_url"
-                    maxlength="500"
-                    value="<?= e($old['image_url']) ?>"
-                    placeholder="https://contoh.com/gambar.jpg"
+                    type="file"
+                    id="image"
+                    name="image"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
                 >
+                <small style="display: block; margin-top: 0.35rem; color: var(--text-muted); font-size: 0.85rem;">
+                    Format: JPG, PNG, WEBP, GIF (Maksimal 2MB). Opsional.
+                </small>
             </div>
 
             <p style="font-size: 0.85rem; color: var(--text-muted);">* Wajib diisi.</p>
